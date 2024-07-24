@@ -13,18 +13,38 @@ MAIN_MENU () {
   fi
 
   echo -e "\nHow can we help you today? Please select a service:"
-  echo -e "\n1) Women's Haircut\n2) Men's Haircut\n3) Hair Conditioning Treatment"
+  SERVICES=$($PSQL "SELECT * FROM services")
+
+  # Need to put quotation marks around echo variable, otherwise formatting won't work
+  echo "$SERVICES" | while read SERVICE_ID BAR NAME
+  do
+    echo "$SERVICE_ID) $NAME"
+  done
+
   read SERVICE_ID_SELECTED
 
   case $SERVICE_ID_SELECTED in
-    1) WOMENS_HAIRCUT ;;
-    2) MENS_HAIRCUT ;;
-    3) HAIR_CONDITIONING_TREATMENT;;
+    $SERVICE_ID) BOOK_APPOINTMENT ;;
     *) MAIN_MENU "Sorry, we don't offer that service. Please pick a different service." ;;
   esac
 }
 
 WOMENS_HAIRCUT() {
+  echo -e "\nYou have selected your service to be a WOMEN'S HAIRCUT."
+  BOOK_APPOINTMENT
+}
+
+MENS_HAIRCUT() {
+   echo -e "\nYou have selected your service to be a MEN'S HAIRCUT."
+   BOOK_APPOINTMENT
+}
+
+HAIR_CONDITIONING_TREATMENT () {
+  echo -e "\nYou have selected your service to be a HAIR CONDITIONING TREATMENT."
+  BOOK_APPOINTMENT
+}
+
+BOOK_APPOINTMENT() {
   # enter phone number
   echo -e "\nPlease enter your phone number"
   read PHONE_NUMBER
@@ -33,22 +53,24 @@ WOMENS_HAIRCUT() {
   CUSTOMER_PHONE=$($PSQL "SELECT phone FROM customers WHERE phone='$PHONE_NUMBER'")
 
   # if phone number doesn't exist
-  if [[ -z $PHONE_EXISTS ]]
+  if [[ -z $CUSTOMER_PHONE ]]
   then
+    echo $CUSTOMER_PHONE
     # ask for name
     echo -e "\nWhat is your name?"
     read CUSTOMER_NAME
 
     # Put data into services
-    NEW_CUSTOMER=$($PSQL "INSERT INTO customers(phone,name) VALUES('$PHONE_NUMBER','$CUSTOMER_NAME')")
+   CUSTOMER_NAME=$($PSQL "INSERT INTO customers(phone,name) VALUES('$PHONE_NUMBER','$CUSTOMER_NAME')")
 
     # confirm entry
-    if [[ $NEW_CUSTOMER == 'INSERT 0 1' ]]
+    if [[ $CUSTOMER_NAME == 'INSERT 0 1' ]]
     then
-      echo $NEW_CUSTOMER
+      echo $CUSTOMER_NAME
     fi
   else
-    echo
+    CUSTOMER_NAME=$($PSQL "SELECT name FROM customers WHERE phone='$PHONE_NUMBER'")
+    echo -e "\nWelcome back, $CUSTOMER_NAME!"
   fi
 
 
@@ -67,15 +89,6 @@ WOMENS_HAIRCUT() {
   
   # Use a regex to get rid of space
   echo "I have put you down for a $SERVICE_NAME at $SERVICE_TIME, $CUSTOMER_NAME."
-
-}
-
-MENS_HAIRCUT() {
-  echo "You have selected Men's Haircut as your service."
-}
-
-HAIR_CONDITIONING_TREATMENT () {
-  echo "You have selected a hair conditioning treatment as your service."
 }
 
 MAIN_MENU
