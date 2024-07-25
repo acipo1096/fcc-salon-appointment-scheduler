@@ -13,64 +13,57 @@ MAIN_MENU () {
   fi
 
   echo -e "\nHow can we help you today? Please select a service:"
-  SERVICES=$($PSQL "SELECT * FROM services")
-
-  # Need to put quotation marks around echo variable, otherwise formatting won't work
-  echo "$SERVICES" | while read SERVICE_ID BAR NAME
-  do
-    echo "$SERVICE_ID) $NAME"
-  done
+  echo -e "\n1) Women's Haircut\n2) Men's Haircut\n3) Hair Conditioning Treatment"
 
   read SERVICE_ID_SELECTED
 
   case $SERVICE_ID_SELECTED in
-    $SERVICE_ID) BOOK_APPOINTMENT ;;
+    1) WOMENS_HAIRCUT ;;
+    2) MENS_HAIRCUT ;;
+    3) HAIR_CONDITIONING_TREATMENT ;;
     *) MAIN_MENU "Sorry, we don't offer that service. Please pick a different service." ;;
   esac
 }
 
 WOMENS_HAIRCUT() {
-  echo -e "\nYou have selected your service to be a WOMEN'S HAIRCUT."
+  echo -e "\nYou have selected the WOMEN'S HAIRCUT."
   BOOK_APPOINTMENT
 }
 
 MENS_HAIRCUT() {
-   echo -e "\nYou have selected your service to be a MEN'S HAIRCUT."
+   echo -e "\nYou have selected the MEN'S HAIRCUT."
    BOOK_APPOINTMENT
 }
 
 HAIR_CONDITIONING_TREATMENT () {
-  echo -e "\nYou have selected your service to be a HAIR CONDITIONING TREATMENT."
+  echo -e "\nYou have selected the HAIR CONDITIONING TREATMENT."
   BOOK_APPOINTMENT
 }
 
 BOOK_APPOINTMENT() {
   # enter phone number
-  echo -e "\nPlease enter your phone number"
-  read PHONE_NUMBER
+  echo "Please enter your phone number"
+  read CUSTOMER_PHONE
 
   # check if phone number exists
-  CUSTOMER_PHONE=$($PSQL "SELECT phone FROM customers WHERE phone='$PHONE_NUMBER'")
+  PHONE_NUMBER=$($PSQL "SELECT phone FROM customers WHERE phone='$CUSTOMER_PHONE'")
 
   # if phone number doesn't exist
-  if [[ -z $CUSTOMER_PHONE ]]
+  if [[ -z $PHONE_NUMBER ]]
   then
-    echo $CUSTOMER_PHONE
+    echo $PHONE_NUMBER
     # ask for name
     echo -e "\nWhat is your name?"
     read CUSTOMER_NAME
 
     # Put data into services
-   CUSTOMER_NAME=$($PSQL "INSERT INTO customers(phone,name) VALUES('$PHONE_NUMBER','$CUSTOMER_NAME')")
+   NAME=$($PSQL "INSERT INTO customers(phone,name) VALUES('$CUSTOMER_PHONE','$CUSTOMER_NAME')")
+   CUSTOMER_NAME_FORMATTED=$(echo $CUSTOMER_NAME | sed 's/^ $|//')
 
-    # confirm entry
-    if [[ $CUSTOMER_NAME == 'INSERT 0 1' ]]
-    then
-      echo $CUSTOMER_NAME
-    fi
   else
-    CUSTOMER_NAME=$($PSQL "SELECT name FROM customers WHERE phone='$PHONE_NUMBER'")
-    echo -e "\nWelcome back, $CUSTOMER_NAME!"
+    CUSTOMER_NAME=$($PSQL "SELECT name FROM customers WHERE phone='$CUSTOMER_PHONE'")
+    CUSTOMER_NAME_FORMATTED=$(echo $CUSTOMER_NAME | sed 's/^ $|//')
+    echo -e "\nWelcome back, $CUSTOMER_NAME_FORMATTED!"
   fi
 
 
@@ -79,16 +72,16 @@ BOOK_APPOINTMENT() {
   read SERVICE_TIME
 
   # get customer id
-  CUSTOMER_ID=$($PSQL "SELECT customer_id FROM customers WHERE phone='$PHONE_NUMBER'")
+  CUSTOMER_ID=$($PSQL "SELECT customer_id FROM customers WHERE phone='$CUSTOMER_PHONE'")
   
   # get service name
   SERVICE_NAME=$($PSQL "SELECT name FROM services WHERE service_id=$SERVICE_ID_SELECTED")
+  SERVICE_NAME_FORMATTED=$(echo $SERVICE_NAME | sed 's/^ $|//')
 
   # create appointment
   NEW_APPOINTMENT=$($PSQL "INSERT INTO appointments(customer_id,service_id,time) VALUES($CUSTOMER_ID,$SERVICE_ID_SELECTED,'$SERVICE_TIME')")
   
-  # Use a regex to get rid of space
-  echo "I have put you down for a $SERVICE_NAME at $SERVICE_TIME, $CUSTOMER_NAME."
+  echo -e "\nI have put you down for a $SERVICE_NAME_FORMATTED at $SERVICE_TIME, $CUSTOMER_NAME_FORMATTED."
 }
 
 MAIN_MENU
